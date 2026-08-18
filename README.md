@@ -154,6 +154,37 @@ A rule that uses vague language (`fast`, `robust`, `scalable`, `appropriate`, �
 states no comparison, numeral, or identifier is rejected as unverifiable and reported
 rather than silently checked. SpecGuard is only as good as the spec, and says so.
 
+## Tuning retrieval
+
+If rules come back `UNMAPPED`, Stage 1 could not find code for them. Diagnose before
+changing anything — the report records `stage1.top_score` for every rule, including the
+unmapped ones, so you can see how close it got.
+
+Two things fix almost all of it:
+
+**Name what the rule constrains.** Retrieval matches on shared vocabulary, so a rule that
+says `SimpleImputer`, `pos_weight` or `select_threshold` finds its code; one that says
+"the preprocessing is fit correctly" does not. The claim stays the same either way —
+naming things as the system names them is just what makes a rule findable.
+
+**Lower the floor.** `retrieval.floor` defaults to `0.15`, which suits small functions.
+The scorer uses symmetric Jaccard, so it divides by the union of both term sets: a
+90-line function with 118 identifiers is penalised for its size no matter how well it
+matches, and large functions are exactly where drift hides. On a real project the correct
+chunk was routinely ranked **first** and still fell below the floor at 0.05–0.11.
+
+```toml
+[retrieval]
+floor = 0.07     # was 0.15
+top_k = 3
+```
+
+This is the honest limitation of a lexical scorer, and it is why `Retriever.rank()` is an
+interface: an embedding backend is the Phase-2 swap, and lexical-vs-embedding is a planned
+ablation. What matters for now is that the failure is *attributable* — `stage1` timings and
+scores are recorded per rule, so a miss is visibly a retrieval miss rather than a bad
+verdict.
+
 ## Providers
 
 | Provider | Notes |
