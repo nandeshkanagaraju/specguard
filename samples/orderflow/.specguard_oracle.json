@@ -1,0 +1,661 @@
+{
+  "prompt_version": "pv1",
+  "model_id": "mock-v1",
+  "source": "seeded",
+  "note": "Recorded conformance judgements for the orderflow fixture. Evidence is stored as verbatim source anchors and re-resolved to line numbers at replay time, so a citation can never point at code that is not there. Regenerate from a live model with `specguard record-oracle`.",
+  "entries": [
+    {
+      "key": "26cbd21ca5562d2d36a6f03f88af8a47c8b79bed4d94b75cbc1502f2f8554cd4",
+      "rule_id": "R-001",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "    rate = discount_rate(discount_codes)"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.93,
+        "evidence": [
+          {
+            "path": "orderflow/pricing.py",
+            "anchor": "    rate = discount_rate(discount_codes)\n    return round(subtotal * (1.0 - rate), 2)"
+          }
+        ],
+        "reasoning": "apply_discount scales the raw subtotal by the discount rate and returns the result, with no tax term anywhere in the expression. Tax is applied separately by calculate_tax on that already-discounted figure."
+      }
+    },
+    {
+      "key": "a69c958d5e67f81027743e7d33887a2854504565f7f0a1ae65971704ebe31634",
+      "rule_id": "R-001",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "    rate = discount_rate(discount_codes)"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "One could argue the ordering is only implicit here, since apply_discount never names tax. It is not a real objection: the function receives the pre-tax subtotal and the caller applies tax to its output.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "582fb500ea7ae4ed3fa638f58a39e081c20d4b3da348e1500563db39aae97a03",
+      "rule_id": "R-002",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "    return min(raw, MAX_DISCOUNT_RATE)"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.95,
+        "evidence": [
+          {
+            "path": "orderflow/pricing.py",
+            "anchor": "    return min(raw, MAX_DISCOUNT_RATE)"
+          }
+        ],
+        "reasoning": "discount_rate sums the matched codes and clamps the total with min(raw, MAX_DISCOUNT_RATE), where MAX_DISCOUNT_RATE is 0.40. Stacked codes therefore cannot exceed 40% of the subtotal."
+      }
+    },
+    {
+      "key": "cf3aded8a8ac74dae2e7418c210977af1f31c96d7b4f3ff2b06b61fca578c5d0",
+      "rule_id": "R-002",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "    return min(raw, MAX_DISCOUNT_RATE)"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "The strongest counter would be that the cap applies to the rate rather than the money, but since the rate multiplies the subtotal directly the two are the same constraint. No overturn.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "f37ae51aece1e96b3780f08501c3fda5278352ed7adca62cc18f7af15796f945",
+      "rule_id": "R-003",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "    return round(discounted_subtotal * TAX_RATE, 2)"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.94,
+        "evidence": [
+          {
+            "path": "orderflow/pricing.py",
+            "anchor": "    return round(discounted_subtotal * TAX_RATE, 2)"
+          }
+        ],
+        "reasoning": "calculate_tax multiplies its argument by TAX_RATE, which is 0.08, and the parameter is named discounted_subtotal. The rate and the base both match the rule."
+      }
+    },
+    {
+      "key": "67825fc6e9008d33e56939d69fb14e1ab22065d20d99f2343b3412ad3d627b28",
+      "rule_id": "R-003",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "    return round(discounted_subtotal * TAX_RATE, 2)"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "I looked for a rounding objection \u2014 round() to two places could in principle shift the effective rate \u2014 but the rule states no rounding requirement, so inventing one would be over-reach.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "ea033788aba7abec5aa20348995b2d66ce48ccdd4e718f524a88b49e3586b77f",
+      "rule_id": "R-004",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "    if subtotal >= FREE_SHIPPING_THRESHOLD:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.94,
+        "evidence": [
+          {
+            "path": "orderflow/shipping.py",
+            "anchor": "    if subtotal >= FREE_SHIPPING_THRESHOLD:\n        return 0.0"
+          }
+        ],
+        "reasoning": "shipping_fee compares the subtotal to FREE_SHIPPING_THRESHOLD with >=, so an order of exactly 500 returns a fee of 0.0. The inclusive boundary matches '500 or more'."
+      }
+    },
+    {
+      "key": "07b1f628f06bca0c25a31393e25ee606e69a1cda5e66623e2ecdf1b162273bf8",
+      "rule_id": "R-004",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "    if subtotal >= FREE_SHIPPING_THRESHOLD:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "To overturn this I would need the threshold constant to differ from 500, but it is defined as 500.0 in the same module. No counter-argument holds.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "b68414bfb5563289620f1da9b7d4cf1d94b0286282929df9244ffbb6cdd18845",
+      "rule_id": "R-005",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "    if subtotal >= FREE_SHIPPING_THRESHOLD:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.92,
+        "evidence": [
+          {
+            "path": "orderflow/shipping.py",
+            "anchor": "    return STANDARD_SHIPPING_FEE"
+          },
+          {
+            "path": "orderflow/shipping.py",
+            "anchor": "STANDARD_SHIPPING_FEE = 40.0"
+          }
+        ],
+        "reasoning": "Any subtotal that fails the free-shipping test falls through to STANDARD_SHIPPING_FEE, which is 40.0, with no proportional component. That is the flat fee the rule requires."
+      }
+    },
+    {
+      "key": "0074261260ce789983fdcb970102b88d1c32e44f491372ed6f245a06e76625d2",
+      "rule_id": "R-005",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "    if subtotal >= FREE_SHIPPING_THRESHOLD:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "No honest counter-argument: the fee is a single module constant returned unconditionally on the below-threshold path.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "6fb70146fe60d8ca073862fe9af694107fa1e54dbdc6af767ab6141866bb8666",
+      "rule_id": "R-006",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "    except PaymentDeclined:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.92,
+        "evidence": [
+          {
+            "path": "orderflow/checkout.py",
+            "anchor": "    reserve_stock(order, warehouse, now=now)\n\n    try:\n        gateway.authorise(order[\"id\"], money[\"total\"])"
+          }
+        ],
+        "reasoning": "checkout calls reserve_stock before entering the try block that authorises payment, so stock is held before the gateway is contacted. The statement order matches the rule."
+      }
+    },
+    {
+      "key": "5c282df2a187c61c901055633934cb19b34c06896ae4c5ec18a4fd7158ccd174",
+      "rule_id": "R-006",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "    except PaymentDeclined:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "I considered arguing that reserve_stock might defer its work, but it loops and calls warehouse.reserve synchronously. No overturn.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "86317ce15bc6f39e5dba6973eb216d940daa479bc1fc4d1e254161812dea175a",
+      "rule_id": "R-007",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "        return age >= timedelta(minutes=RESERVATION_TTL_MINUTES)"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.91,
+        "evidence": [
+          {
+            "path": "orderflow/inventory.py",
+            "anchor": "        return age >= timedelta(minutes=RESERVATION_TTL_MINUTES)"
+          },
+          {
+            "path": "orderflow/inventory.py",
+            "anchor": "            if reservation.is_expired(now):\n                self.stock[reservation.sku] = self.available(reservation.sku) + reservation.quantity"
+          }
+        ],
+        "reasoning": "is_expired treats a reservation as expired once its age reaches the 15-minute TTL, and release_expired adds the reserved quantity back to self.stock for each expired reservation. Both halves of the rule are implemented."
+      }
+    },
+    {
+      "key": "599421bbf9020ae92c0de4abb2a3f7240e9825fdf6d355d825abda70be67eb57",
+      "rule_id": "R-007",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "        return age >= timedelta(minutes=RESERVATION_TTL_MINUTES)"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "An objection could be built around >= versus > at exactly 15 minutes, but the rule says 'after 15 minutes' without fixing the boundary, so either comparison satisfies it. No overturn.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "0fd2274080658ac4bdbe83b871fcbe043dbdd29d58651b4938f78a9981f0739c",
+      "rule_id": "R-008",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "        if item[\"quantity\"] < 1:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.93,
+        "evidence": [
+          {
+            "path": "orderflow/checkout.py",
+            "anchor": "    for item in order[\"items\"]:\n        if item[\"quantity\"] < 1:"
+          }
+        ],
+        "reasoning": "validate_order iterates the line items and raises InvalidOrder for any quantity below 1. The rejection the rule asks for is implemented and reached before any side effect."
+      }
+    },
+    {
+      "key": "5e2b9835e4daf4657d5c6ff470cf48d154ccc4e6ed920a9aa5ac4bf7402f0cb7",
+      "rule_id": "R-008",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "        if item[\"quantity\"] < 1:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "A counter would need the check to be unreachable or the comparison to be wrong; it is neither. No overturn.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "9ce68ac567c3a5dbfe4e594c20a51ae1c53a47764a948d8774fa6c7b635ea1c3",
+      "rule_id": "R-009",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "    except PaymentDeclined:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.91,
+        "evidence": [
+          {
+            "path": "orderflow/checkout.py",
+            "anchor": "    except PaymentDeclined:\n        log_payment_failure(order[\"id\"])\n        raise"
+          }
+        ],
+        "reasoning": "A declined authorisation is caught, logged, and re-raised bare, so PaymentDeclined reaches the caller. Nothing on that path releases the reservation made earlier in the function."
+      }
+    },
+    {
+      "key": "cc5100df1fe5b620991616b7b762da648c6b62a4e8388d563b523a46ac4b8243",
+      "rule_id": "R-009",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "    except PaymentDeclined:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "The nearest objection is that log_payment_failure runs before the re-raise, but it only appends an id to a list and cannot release stock.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "2115c4d587c3d9e2f8e252a21072f80c2040b77aab11fb2c4e5f5e1aa75a07f5",
+      "rule_id": "R-010",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "        lines.append({\"sku\": item[\"sku\"], \"quantity\": item[\"quantity\"]})"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.93,
+        "evidence": [
+          {
+            "path": "orderflow/checkout.py",
+            "anchor": "    return {\n        \"order_id\": order[\"id\"],\n        \"total\": money[\"total\"],"
+          }
+        ],
+        "reasoning": "build_receipt returns a dict carrying order_id and total, and checkout returns its result on the completed path. Both required fields are present."
+      }
+    },
+    {
+      "key": "ac99c401be073e90a3fbc06baef97e6b6d503aedf4f7479e94c640d19a088d72",
+      "rule_id": "R-010",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "        lines.append({\"sku\": item[\"sku\"], \"quantity\": item[\"quantity\"]})"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "No honest counter-argument; both keys are set unconditionally.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "1d9e1242a11ac897518d40c8eab3f4f14f6d4e7736c0c1e89b6ddad9ef6aedff",
+      "rule_id": "R-011",
+      "pass": "A",
+      "variant": "clean",
+      "discriminators": [
+        "        self.reservations[(order_id, sku)] = reservation"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.82,
+        "evidence": [
+          {
+            "path": "orderflow/inventory.py",
+            "anchor": "        reservation = Reservation(order_id, sku, quantity, now, self.warehouse_id)\n        self.reservations[(order_id, sku)] = reservation"
+          }
+        ],
+        "reasoning": "reserve keys each reservation by (order_id, sku) in the warehouse instance's own ledger and stamps it with self.warehouse_id, so a reservation is scoped to one SKU in one warehouse. Nothing in the class reads or writes another warehouse's stock."
+      }
+    },
+    {
+      "key": "7e4dd50fd32c300fb159c530aa341cd8d4e0a5cd0b8f89e746cb25503a03573f",
+      "rule_id": "R-011",
+      "pass": "B",
+      "variant": "clean",
+      "discriminators": [
+        "        self.reservations[(order_id, sku)] = reservation"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "The honest counter is that nothing structurally prevents a caller from reserving the same SKU in two warehouses for one order. That is not what the rule forbids \u2014 it forbids a single reservation spanning warehouses \u2014 so the verdict stands.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "166dd179926bf4de432065c04a98207d3b40ab21fd532300ab2b4fb68134216e",
+      "rule_id": "R-004",
+      "pass": "A",
+      "variant": "drifted",
+      "discriminators": [
+        "    if subtotal > FREE_SHIPPING_THRESHOLD:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "DRIFTED",
+        "category": "D1",
+        "confidence": 0.93,
+        "evidence": [
+          {
+            "path": "orderflow/shipping.py",
+            "anchor": "    if subtotal > FREE_SHIPPING_THRESHOLD:\n        return 0.0"
+          },
+          {
+            "path": "orderflow/shipping.py",
+            "anchor": "FREE_SHIPPING_THRESHOLD = 500.0"
+          }
+        ],
+        "reasoning": "The rule grants free shipping at a subtotal of 500 or more, but the comparison is a strict greater-than against a threshold of 500.0. An order of exactly 500.00 falls through and is charged the standard fee."
+      }
+    },
+    {
+      "key": "7f0b155133a53cdc282d946cf2e6aa6999ae904914d88b01ead9347236154691",
+      "rule_id": "R-004",
+      "pass": "B",
+      "variant": "drifted",
+      "discriminators": [
+        "    if subtotal > FREE_SHIPPING_THRESHOLD:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "The best case for the code is that a subtotal landing on exactly 500.00 is rare in float arithmetic. That is a probability argument, not a conformance one \u2014 the spec fixes the boundary explicitly.",
+        "confidence": 0.25
+      }
+    },
+    {
+      "key": "975301e68299d70bf79d5dd577f14c97095d2138877dc1c1c6d0ea7da7f3f8cb",
+      "rule_id": "R-005",
+      "pass": "A",
+      "variant": "drifted",
+      "discriminators": [
+        "    if subtotal > FREE_SHIPPING_THRESHOLD:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.88,
+        "evidence": [
+          {
+            "path": "orderflow/shipping.py",
+            "anchor": "    return STANDARD_SHIPPING_FEE"
+          },
+          {
+            "path": "orderflow/shipping.py",
+            "anchor": "STANDARD_SHIPPING_FEE = 40.0"
+          }
+        ],
+        "reasoning": "Orders below the threshold return STANDARD_SHIPPING_FEE, a flat 40.0. This rule constrains the amount charged below the threshold, not where the threshold itself sits, and the amount is correct."
+      }
+    },
+    {
+      "key": "4bfef89acc5ad679dfb2e632f62e2c3116d7309efca4214ce1f041e2c1e9b5da",
+      "rule_id": "R-005",
+      "pass": "B",
+      "variant": "drifted",
+      "discriminators": [
+        "    if subtotal > FREE_SHIPPING_THRESHOLD:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "The set of orders treated as 'below the threshold' has changed, which arguably touches this rule. But the fee charged to them is still a flat 40, which is all this rule asks; the boundary is R-004's concern.",
+        "confidence": 0.35
+      }
+    },
+    {
+      "key": "84f775ab8cdfb8cde57f09ea360bfad728a99253189d1d4dcb029ded38aa972f",
+      "rule_id": "R-006",
+      "pass": "A",
+      "variant": "drifted",
+      "discriminators": [
+        "    except Exception:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "DRIFTED",
+        "category": "D5",
+        "confidence": 0.9,
+        "evidence": [
+          {
+            "path": "orderflow/checkout.py",
+            "anchor": "    try:\n        gateway.authorise(order[\"id\"], money[\"total\"])\n    except Exception:\n        log_payment_failure(order[\"id\"])\n        raise PaymentDeclined(order[\"id\"])\n\n    reserve_stock(order, warehouse, now=now)"
+          }
+        ],
+        "reasoning": "The rule requires stock to be reserved before payment is authorised, but gateway.authorise runs first and reserve_stock only afterwards. A customer can be charged for units another order takes in the interval."
+      }
+    },
+    {
+      "key": "62eb89d4f51de163cb61cb6d48da0fc0fdd0c81040fefbb595e70712e3c02b88",
+      "rule_id": "R-006",
+      "pass": "B",
+      "variant": "drifted",
+      "discriminators": [
+        "    except Exception:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "The only defence available is that the docstring still describes the correct order, which is not implementation. The executable statement order contradicts the rule.",
+        "confidence": 0.15
+      }
+    },
+    {
+      "key": "f4700674962d637c539ef30ca4f0d455389149190488f58e69c81a35f3cb7125",
+      "rule_id": "R-008",
+      "pass": "A",
+      "variant": "drifted",
+      "discriminators": [
+        "    \"\"\"Reject an order containing any item with a quantity below 1."
+      ],
+      "discriminators_absent": [
+        "        if item[\"quantity\"] < 1:"
+      ],
+      "response": {
+        "verdict": "DRIFTED",
+        "category": "D2",
+        "confidence": 0.94,
+        "evidence": [
+          {
+            "path": "orderflow/checkout.py",
+            "anchor": "    \"\"\"Reject an order containing any item with a quantity below 1."
+          },
+          {
+            "path": "orderflow/checkout.py",
+            "anchor": "    if not order.get(\"items\"):\n        raise InvalidOrder(\"order contains no items\")"
+          }
+        ],
+        "reasoning": "validate_order now only rejects an order with no items at all; nothing inspects per-item quantity, so an item with quantity 0 or -3 passes validation. The docstring still promises the check that the body no longer performs."
+      }
+    },
+    {
+      "key": "3b8860c55de3f8abec667b8b54be6af46fcb9bde4d7cfc3ab5064afb2b4eaf58",
+      "rule_id": "R-008",
+      "pass": "B",
+      "variant": "drifted",
+      "discriminators": [
+        "    \"\"\"Reject an order containing any item with a quantity below 1."
+      ],
+      "discriminators_absent": [
+        "        if item[\"quantity\"] < 1:"
+      ],
+      "response": {
+        "overturned": false,
+        "argument": "One could hope the quantity check moved to order_total or reserve_stock, but neither compares quantity to 1 \u2014 reserve_stock passes the value straight through to the warehouse.",
+        "confidence": 0.2
+      }
+    },
+    {
+      "key": "b0b1944887271b29902a1dd33cbbaa8feb5236e413f61b876c9ea8d42fdc1b2b",
+      "rule_id": "R-009",
+      "pass": "A",
+      "variant": "drifted",
+      "discriminators": [
+        "    except Exception:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "DRIFTED",
+        "category": "D7",
+        "confidence": 0.78,
+        "evidence": [
+          {
+            "path": "orderflow/checkout.py",
+            "anchor": "    except Exception:\n        log_payment_failure(order[\"id\"])\n        raise PaymentDeclined(order[\"id\"])"
+          }
+        ],
+        "reasoning": "The handler catches bare Exception rather than PaymentDeclined, so any failure from the gateway \u2014 a timeout, a bad response \u2014 is relabelled as a declined payment. The rule ties PaymentDeclined specifically to a failed payment."
+      }
+    },
+    {
+      "key": "5b5d9b792f63c3e4f9b04535fcda8eba382ce0a5c250baf88ac7883f7eb87266",
+      "rule_id": "R-009",
+      "pass": "B",
+      "variant": "drifted",
+      "discriminators": [
+        "    except Exception:"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": true,
+        "argument": "Read literally, the rule asks for two things on a failed payment: that PaymentDeclined is raised, and that stock stays reserved. This code does raise PaymentDeclined and never releases stock, so the rule as written is satisfied \u2014 the broad catch is a separate defect the rule does not mention.",
+        "confidence": 0.66
+      }
+    },
+    {
+      "key": "217b4e7cddb3c75e2d3aad944f05c601291edebeacf2912db6428165bc822464",
+      "rule_id": "R-010",
+      "pass": "A",
+      "variant": "drifted",
+      "discriminators": [
+        "            for item in order[\"items\"]"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "verdict": "ALIGNED",
+        "category": null,
+        "confidence": 0.92,
+        "evidence": [
+          {
+            "path": "orderflow/checkout.py",
+            "anchor": "    return {\n        \"order_id\": order[\"id\"],\n        \"total\": money[\"total\"],"
+          }
+        ],
+        "reasoning": "build_receipt has been rewritten to build its line items with a comprehension, but it still returns order_id and total unconditionally. The change is behaviour-preserving with respect to this rule."
+      }
+    },
+    {
+      "key": "4da18c2f207a689853b1645315b6b8fd06b35aa166bbc478883259469e77e207",
+      "rule_id": "R-010",
+      "pass": "B",
+      "variant": "drifted",
+      "discriminators": [
+        "            for item in order[\"items\"]"
+      ],
+      "discriminators_absent": [],
+      "response": {
+        "overturned": false,
+        "argument": "The function was edited, which invites suspicion, but the edit only replaces an accumulator loop with an equivalent comprehension. Rewriting is not drift.",
+        "confidence": 0.18
+      }
+    }
+  ]
+}

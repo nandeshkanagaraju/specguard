@@ -1,0 +1,22 @@
+# SpecGuard configuration for the orderflow demo fixture.
+
+[spec]
+path = "SPEC.md"
+
+[model]
+provider = "mock"            # mock | anthropic | ollama
+anthropic_model = "claude-sonnet-5"
+ollama_model = "qwen2.5-coder:7b"
+ollama_host = "http://localhost:11434"
+
+[retrieval]
+top_k = 3
+floor = 0.15
+
+[scoring]
+# Below this, the verdict is downgraded to NEEDS_HUMAN. This is a policy knob,
+# not a constant of nature: raise it to abstain more, lower it to decide more.
+abstain_below = 0.55
+
+[report]
+strict = false

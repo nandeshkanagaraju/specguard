@@ -1,0 +1,43 @@
+# SpecGuard — spec-drift check on every pull request.
+#
+# Copy to .github/workflows/specguard.yml
+name: Spec drift
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  specguard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install SpecGuard
+        run: pip install --quiet specguard
+
+      # Cached verdicts make repeat runs near-instant and keep results stable
+      # across re-runs of the same commit.
+      - name: Restore verdict cache
+        uses: actions/cache@v4
+        with:
+          path: .specguard/cache
+          key: specguard-${{ hashFiles('SPEC.md') }}-${{ github.sha }}
+          restore-keys: specguard-${{ hashFiles('SPEC.md') }}-
+
+      - name: Check the spec
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: specguard check . --provider anthropic
+
+      - name: Upload the drift report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: specguard-report
+          path: .specguard/report.json

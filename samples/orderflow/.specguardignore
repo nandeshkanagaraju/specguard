@@ -1,0 +1,7 @@
+# Paths SpecGuard should not treat as implementation.
+# A conformance checker judges the code the spec describes, not the code that
+# tests it — otherwise a test asserting the old behaviour looks like evidence.
+tests
+test_*.py
+*_test.py
+conftest.py

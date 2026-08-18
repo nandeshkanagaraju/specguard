@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# SpecGuard pre-commit hook.
+#
+# Checks the working tree against SPEC.md before the commit is created.
+# Real drift blocks the commit; abstentions and unmapped rules only warn.
+# Bypass once with:  git commit --no-verify
+set -uo pipefail
+
+REPO="$(git rev-parse --show-toplevel)"
+
+# `specguard hook install` bakes in the absolute path of the interpreter that
+# installed this hook, so the check still runs when SpecGuard lives in a
+# virtualenv that is not on PATH. The PATH lookup is the fallback.
+SPECGUARD_BIN="@SPECGUARD_BIN@"
+
+if [ ! -x "$SPECGUARD_BIN" ]; then
+  SPECGUARD_BIN="$(command -v specguard 2>/dev/null || true)"
+fi
+
+if [ -z "$SPECGUARD_BIN" ]; then
+  cat >&2 <<'MSG'
+
+  specguard: not found — the spec-drift check did NOT run.
+
+  The commit is being allowed through, but nothing was checked. Reinstall the
+  hook from the environment SpecGuard is installed in:
+
+      specguard hook install .
+
+MSG
+  exit 0
+fi
+
+if [ ! -f "$REPO/SPEC.md" ] && [ ! -f "$REPO/specguard.toml" ]; then
+  exit 0
+fi
+
+echo "specguard: checking the working tree against the spec…"
+"$SPECGUARD_BIN" check "$REPO"
+STATUS=$?
+
+if [ $STATUS -ne 0 ]; then
+  cat >&2 <<'MSG'
+
+  Commit blocked: the code no longer matches the specification.
+
+  Either fix the code, or update SPEC.md if the behaviour was meant to change.
+  Full detail:  .specguard/report.json
+  Bypass once:  git commit --no-verify
+
+MSG
+fi
+
+exit $STATUS
