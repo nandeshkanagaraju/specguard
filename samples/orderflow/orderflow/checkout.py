@@ -20,11 +20,6 @@ def validate_order(order: dict) -> None:
     """
     if not order.get("items"):
         raise InvalidOrder("order contains no items")
-    for item in order["items"]:
-        if item["quantity"] < 1:
-            raise InvalidOrder(
-                f"item {item['sku']} has quantity {item['quantity']}, minimum is 1"
-            )
 
 
 def order_total(order: dict) -> dict:
@@ -54,13 +49,13 @@ def reserve_stock(order: dict, warehouse, now=None) -> list:
 
 def build_receipt(order: dict, money: dict) -> dict:
     """Receipt for a completed order: the order id and the total charged."""
-    lines = []
-    for item in order["items"]:
-        lines.append({"sku": item["sku"], "quantity": item["quantity"]})
     return {
         "order_id": order["id"],
         "total": money["total"],
-        "lines": lines,
+        "lines": [
+            {"sku": item["sku"], "quantity": item["quantity"]}
+            for item in order["items"]
+        ],
     }
 
 
@@ -81,12 +76,12 @@ def checkout(order: dict, warehouse, gateway, now=None) -> dict:
     validate_order(order)
     money = order_total(order)
 
-    reserve_stock(order, warehouse, now=now)
-
     try:
         gateway.authorise(order["id"], money["total"])
-    except PaymentDeclined:
+    except Exception:
         log_payment_failure(order["id"])
-        raise
+        raise PaymentDeclined(order["id"])
+
+    reserve_stock(order, warehouse, now=now)
 
     return build_receipt(order, money)

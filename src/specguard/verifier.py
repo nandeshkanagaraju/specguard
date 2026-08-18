@@ -88,9 +88,13 @@ def _interpret(payload: dict, candidates: list[Candidate]) -> PassA:
 
     evidence = validate_evidence(payload.get("evidence") or [], candidates)
 
-    if verdict == DRIFTED and not evidence:
-        # A drift claim with no cited line is not a drift claim.
-        raise EvidenceRejected("DRIFTED with no evidence")
+    if verdict in (ALIGNED, DRIFTED) and not evidence:
+        # A decided verdict with no cited line is not a decided verdict. This
+        # applies to ALIGNED as much as to DRIFTED: "the code does the right
+        # thing" is a claim about specific lines, and an uncited claim cannot be
+        # audited. Weak models produce these constantly — the correct response
+        # is to abstain, not to record an unverifiable pass.
+        raise EvidenceRejected(f"{verdict} with no evidence")
     if verdict == DRIFTED and category is None:
         category = "D2"
 

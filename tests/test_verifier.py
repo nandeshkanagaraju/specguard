@@ -93,6 +93,19 @@ def test_drift_without_evidence_is_not_a_drift_claim(r004):
     assert "DRIFTED with no evidence" in (result.rejected or "")
 
 
+def test_aligned_without_evidence_is_also_rejected(r004):
+    """"It's fine" is a claim about specific lines too, and must cite them.
+
+    Weak models emit uncited passes constantly; recording them as ALIGNED would
+    quietly fill the report with verdicts nobody can audit.
+    """
+    rule, candidates = r004
+    adapter = ScriptedAdapter(reply(verdict="ALIGNED", category=None, evidence=[]))
+    result = verify(rule, candidates, adapter)
+    assert result.verdict == NEEDS_HUMAN
+    assert "ALIGNED with no evidence" in (result.rejected or "")
+
+
 # ------------------------------------------------------------------- parsing
 
 
