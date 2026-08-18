@@ -38,6 +38,33 @@ then run `.\setup.ps1` again.
 This creates `.venv\`, installs SpecGuard into it, and builds the demo project's two
 git commits. About a minute.
 
+> **If `setup.ps1` misbehaves, skip it.** It is a convenience wrapper and was written
+> without a Windows machine to test on. These five commands do exactly the same thing and
+> use nothing but `python`, `pip` and `git`:
+>
+> ```powershell
+> py -3.11 -m venv .venv
+> .\.venv\Scripts\python.exe -m pip install --upgrade pip
+> .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+> .\.venv\Scripts\python.exe -m pip install pytest
+> .\scripts\build_fixture.ps1
+> ```
+>
+> And if `build_fixture.ps1` also misbehaves, build the fixture by hand:
+>
+> ```powershell
+> cd samples\orderflow
+> Copy-Item ..\_variants\clean\orderflow\*.py orderflow\ -Force
+> git init -b main ; git add -A
+> git commit -m "clean" ; git tag clean
+> Copy-Item ..\_variants\drifted\orderflow\*.py orderflow\ -Force
+> git add -A ; git commit -m "drifted" ; git tag drifted
+> git checkout clean ; cd ..\..
+> ```
+>
+> Switching commits is then just `git -C samples\orderflow checkout clean` (or `drifted`)
+> instead of `.\demo.ps1`.
+
 ## 3. Point VS Code at the virtualenv
 
 `Ctrl+Shift+P` → **Python: Select Interpreter** → choose the one ending in
